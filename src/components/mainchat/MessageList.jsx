@@ -15,7 +15,7 @@ const MessageList = ({
   messagesEndRef 
 }) => {
   return (
-    <div className="flex-1 overflow-y-auto px-3 sm:px-6 py-4 scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800 relative z-10">
+    <div className="flex-1 overflow-y-auto px-2 sm:px-4 md:px-6 py-2 sm:py-4 scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800 relative z-10">
       {messages.length === 0 ? (
         <div className="flex items-center justify-center h-full">
           <div className="text-center max-w-2xl">
@@ -24,7 +24,7 @@ const MessageList = ({
           </div>
         </div>
       ) : (
-        <div className="max-w-3xl mx-auto space-y-4 sm:space-y-6">
+        <div className="max-w-2xl sm:max-w-3xl mx-auto space-y-3 sm:space-y-4 md:space-y-6">
           {/* Image Placeholder Summary */}
           {filteredMessages.some(msg => msg.isImagePlaceholder) && (
             <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mb-4">
@@ -38,8 +38,8 @@ const MessageList = ({
           )}
           
           {filteredMessages.length === 0 && searchQuery ? (
-            <div className="text-center py-6 sm:py-8">
-              <p className="text-gray-400 text-sm">No messages found matching "{searchQuery}"</p>
+            <div className="text-center py-4 sm:py-6 md:py-8">
+              <p className="text-gray-400 text-xs sm:text-sm">No messages found matching "{searchQuery}"</p>
             </div>
           ) : (
             filteredMessages.map((message) => (

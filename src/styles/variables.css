@@ -1,0 +1,50 @@
+/*
+ * CSS VARIABLES & THEME SYSTEM
+ * 
+ * This file contains all CSS custom properties (variables) and theme definitions.
+ * It provides a centralized location for color schemes, spacing, and other design tokens.
+ */
+
+/* Modern Cool Theme - Dark Mode (Default) */
+:root {
+  /* Dark Mode Colors */
+  --primary-black: #0a0a0a;
+  --secondary-black: #1a1a1a;
+  --gray-900: #1e1e1e;
+  --gray-800: #2d2d2d;
+  --gray-700: #3d3d3d;
+  --gray-600: #4d4d4d;
+  --gray-500: #6d6d6d;
+  --gray-400: #8d8d8d;
+  --gray-300: #adadad;
+  --gray-200: #cdcdcd;
+  --gray-100: #ededed;
+  --white: #f8f9fa;
+  
+  /* Semantic Color Variables */
+  --bg-primary: var(--primary-black);
+  --bg-secondary: var(--gray-900);
+  --bg-tertiary: var(--gray-800);
+  --bg-card: var(--gray-800);
+  --bg-input: var(--gray-800);
+  --bg-hover: var(--gray-800);
+  
+  --text-primary: var(--white);
+  --text-secondary: var(--gray-300);
+  --text-muted: var(--gray-400);
+  --text-inverse: var(--primary-black);
+  
+  --border-primary: var(--gray-800);
+  --border-secondary: var(--gray-700);
+  --border-focus: var(--gray-600);
+  
+  --accent-primary: #3b82f6;
+  --accent-success: #10b981;
+  --accent-warning: #f59e0b;
+  --accent-danger: #ef4444;
+}
+
+/* Dark Mode Class */
+.dark {
+  /* Dark mode is the default, so we don't need to override anything */
+}

@@ -1,0 +1,105 @@
+/*
+ * THEME CLASSES & SEMANTIC STYLING
+ * 
+ * This file contains all theme-related classes and semantic styling.
+ * It provides utility classes for colors, backgrounds, borders, and states.
+ */
+
+/* Background Classes */
+.bg-primary { background-color: var(--bg-primary); }
+.bg-secondary { background-color: var(--bg-secondary); }
+.bg-tertiary { background-color: var(--bg-tertiary); }
+.bg-card { background-color: var(--bg-card); }
+.bg-input { background-color: var(--bg-input); }
+.bg-hover { background-color: var(--bg-hover); }
+
+/* Text Classes */
+.text-primary { color: var(--text-primary); }
+.text-secondary { color: var(--text-secondary); }
+.text-muted { color: var(--text-muted); }
+.text-inverse { color: var(--text-inverse); }
+
+/* Border Classes */
+.border-primary { border-color: var(--border-primary); }
+.border-secondary { border-color: var(--border-secondary); }
+.border-focus { border-color: var(--border-focus); }
+
+/* Hover States */
+.hover-bg-primary:hover { background-color: var(--bg-hover); }
+.hover-bg-secondary:hover { background-color: var(--bg-tertiary); }
+
+/* Focus States */
+.focus-border:focus { border-color: var(--border-focus); }
+
+/* Input and Form Elements */
+input, textarea, select {
+  background-color: var(--bg-input);
+  color: var(--text-primary);
+  border-color: var(--border-secondary);
+}
+
+input:focus, textarea:focus, select:focus {
+  border-color: var(--border-focus);
+  outline: none;
+}
+
+/* Input specific classes */
+.input-bg {
+  background-color: var(--bg-input);
+}
+
+.input-text {
+  color: var(--text-primary);
+}
+
+.input-border {
+  border-color: var(--border-secondary);
+}
+
+.focus-border:focus {
+  border-color: var(--border-focus);
+}
+
+/* Button Elements */
+button {
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+  border-color: var(--border-secondary);
+}
+
+button:hover {
+  background-color: var(--bg-hover);
+}
+
+/* Card Elements */
+.card-bg {
+  background-color: var(--bg-card);
+  border-color: var(--border-primary);
+}
+
+/* Sidebar Elements */
+.sidebar-bg {
+  background-color: var(--bg-secondary);
+}
+
+.sidebar-text {
+  color: var(--text-primary);
+}
+
+.sidebar-border {
+  border-color: var(--border-primary);
+}
+
+/* Theme Toggle Helper Classes */
+.theme-dark {
+  color-scheme: dark;
+}
+
+.theme-light {
+  color-scheme: light;
+}
+
+/* Easy Theme Management */
+.theme-transition {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}

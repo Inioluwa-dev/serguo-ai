@@ -1,0 +1,85 @@
+/*
+ * UTILITY CLASSES & HELPER STYLES
+ * 
+ * This file contains utility classes, helper styles, and common patterns.
+ * It includes button styles, text utilities, and layout helpers.
+ */
+
+/* Modern Button Styles */
+.btn-modern {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-secondary);
+  border-radius: 8px;
+  padding: 12px 24px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.btn-modern:hover {
+  background: var(--bg-hover);
+  border-color: var(--border-focus);
+}
+
+.btn-primary {
+  background: var(--text-inverse);
+  color: var(--text-primary);
+  border: none;
+  border-radius: 8px;
+  padding: 12px 24px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.btn-primary:hover {
+  background: var(--bg-hover);
+}
+
+/* Utility Classes */
+.text-gradient {
+  background: linear-gradient(135deg, var(--text-primary) 0%, var(--text-secondary) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.border-modern {
+  border: 1px solid var(--border-primary);
+}
+
+.bg-modern {
+  background: var(--bg-secondary);
+}
+
+.bg-modern-light {
+  background: var(--bg-tertiary);
+}
+
+/* Component-Specific Overrides */
+.sidebar-bg {
+  background-color: var(--bg-secondary);
+}
+
+.sidebar-text {
+  color: var(--text-primary);
+}
+
+.sidebar-border {
+  border-color: var(--border-primary);
+}
+
+.card-bg {
+  background-color: var(--bg-card);
+}
+
+.input-bg {
+  background-color: var(--bg-input);
+}
+
+.input-text {
+  color: var(--text-primary);
+}
+
+.input-border {
+  border-color: var(--border-secondary);
+}

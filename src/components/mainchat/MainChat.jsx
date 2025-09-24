@@ -14,7 +14,6 @@ const MainChat = ({ onNewChat, messages, setMessages, searchQuery }) => {
   const [imagePreview, setImagePreview] = useState(null);
   const [isHighlighted, setIsHighlighted] = useState(false);
   const [copiedMessageId, setCopiedMessageId] = useState(null);
-  const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const [apiError, setApiError] = useState(null);
   const messagesEndRef = useRef(null);
   const [settings, setSettings] = useState({
@@ -324,22 +323,21 @@ const MainChat = ({ onNewChat, messages, setMessages, searchQuery }) => {
     }
   };
 
-  // Handle offline/online status
-  useEffect(() => {
-    const handleOnline = () => setIsOffline(false);
-    const handleOffline = () => setIsOffline(true);
-
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Check if offline before processing
+    if (!navigator.onLine) {
+      const offlineMessage = {
+        id: Date.now(),
+        content: "You're not connected to the internet. Please check your connection and try again.",
+        isUser: false,
+        timestamp: new Date().toISOString()
+      };
+      setMessages(prev => [...prev, offlineMessage]);
+      return;
+    }
     
     if (inputValue.trim() || selectedImage) {
       const userMessage = {
@@ -624,13 +622,12 @@ const MainChat = ({ onNewChat, messages, setMessages, searchQuery }) => {
       
       {/* Status Indicators */}
       <StatusIndicators 
-        isOffline={isOffline}
         apiError={apiError}
         setApiError={setApiError}
       />
 
       {/* Messages Area - Flexible height with top padding for fixed header and bottom padding for fixed input */}
-      <div className="flex-1 flex flex-col pt-20 sm:pt-24 pb-32 sm:pb-36">
+      <div className="flex-1 flex flex-col pt-20 sm:pt-24 md:pt-28 pb-24 sm:pb-28 md:pb-32">
         <MessageList 
           messages={messages}
           filteredMessages={filteredMessages}

@@ -101,7 +101,8 @@ const MessageItem = ({ message, searchQuery, copiedMessageId, copyMessage }) => 
                 </span>
                 <button
                   onClick={() => copyMessage(message.id, message.content)}
-                  className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-300 transition-colors cursor-pointer"
+                  className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-300 transition-colors cursor-pointer bg-transparent border-none p-0 outline-none shadow-none"
+                  style={{ backgroundColor: 'transparent', boxShadow: 'none' }}
                   title="Copy message"
                 >
                   {copiedMessageId === message.id ? (

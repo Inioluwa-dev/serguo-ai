@@ -1,0 +1,107 @@
+/*
+ * COMPONENT STYLES & FORM ELEMENTS
+ * 
+ * This file contains styling for specific components and form elements.
+ * It includes custom checkbox styling, scrollbars, and component-specific styles.
+ */
+
+/* Custom checkbox styling for older browsers */
+input[type="checkbox"] {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--gray-600);
+  border-radius: 3px;
+  background: var(--gray-700);
+  position: relative;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+input[type="checkbox"]:checked {
+  background: #3b82f6;
+  border-color: #3b82f6;
+}
+
+input[type="checkbox"]:checked::after {
+  content: '✓';
+  position: absolute;
+  top: -2px;
+  left: 1px;
+  color: white;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+/* iOS specific checkbox fixes */
+@supports (-webkit-touch-callout: none) {
+  input[type="checkbox"] {
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+/* Fallback for very old browsers */
+@media screen and (-webkit-min-device-pixel-ratio: 0) {
+  input[type="checkbox"] {
+    -webkit-appearance: checkbox;
+    appearance: checkbox;
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--text-muted);
+  border-radius: 4px;
+  border: 1px solid var(--border-primary);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
+}
+
+/* Tailwind Scrollbar Classes */
+.scrollbar-thin {
+  scrollbar-width: thin;
+}
+
+.scrollbar-thumb-gray-600::-webkit-scrollbar-thumb {
+  background-color: var(--gray-600);
+}
+
+.scrollbar-track-gray-800::-webkit-scrollbar-track {
+  background-color: var(--gray-800);
+}
+
+/* Text selection styling for input fields */
+input[type="text"]::selection {
+  background-color: var(--selection-bg, #3b82f6);
+  color: var(--selection-color, white);
+}
+
+input[type="text"]::-moz-selection {
+  background-color: var(--selection-bg, #3b82f6);
+  color: var(--selection-color, white);
+}
+
+/* Selection Styles */
+::selection {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+/* Focus Styles */
+.focus-ring:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--border-focus);
+}
