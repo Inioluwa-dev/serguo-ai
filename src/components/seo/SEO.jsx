@@ -12,6 +12,9 @@ const SEO = ({
 }) => {
   const fullTitle = title.includes("Serguo AI") ? title : `${title} | Serguo AI`;
   
+  // Ensure image URL is absolute for social media cards
+  const fullImageUrl = image.startsWith('http') ? image : `${url}${image}`;
+  
   return (
     <Helmet>
       {/* Basic Meta Tags */}
@@ -42,22 +45,26 @@ const SEO = ({
       <meta property="og:type" content="website" />
       <meta property="og:title" content={fullTitle} />
       <meta property="og:description" content={description} />
-      <meta property="og:image" content={image} />
+      <meta property="og:image" content={fullImageUrl} />
+      <meta property="og:image:secure_url" content={fullImageUrl} />
       <meta property="og:url" content={url} />
       <meta property="og:site_name" content="Serguo AI" />
       <meta property="og:locale" content="en_US" />
       <meta property="og:image:width" content="1200" />
       <meta property="og:image:height" content="630" />
+      <meta property="og:image:type" content="image/jpeg" />
       <meta property="og:image:alt" content="Serguo AI - Your Image to Text AI Assistant" />
       
       {/* Twitter Card */}
       <meta name="twitter:card" content="summary_large_image" />
       <meta name="twitter:title" content={fullTitle} />
       <meta name="twitter:description" content={description} />
-      <meta name="twitter:image" content={image} />
+      <meta name="twitter:image" content={fullImageUrl} />
+      <meta name="twitter:image:src" content={fullImageUrl} />
       <meta name="twitter:image:alt" content="Serguo AI - Your Image to Text AI Assistant" />
       <meta name="twitter:creator" content={twitterHandle} />
       <meta name="twitter:site" content={twitterHandle} />
+      <meta name="twitter:domain" content="serguo-ai.web.app" />
       
       {/* Additional SEO Meta Tags */}
       <meta name="rating" content="General" />
@@ -81,9 +88,9 @@ const SEO = ({
       )}
       
       {/* Favicon */}
-      <link rel="icon" type="image/jpeg" href="/serguo.jpeg" />
-      <link rel="apple-touch-icon" href="/serguo.jpeg" />
-      <link rel="shortcut icon" href="/serguo.jpeg" />
+      <link rel="icon" type="image/jpeg" href={fullImageUrl} />
+      <link rel="apple-touch-icon" href={fullImageUrl} />
+      <link rel="shortcut icon" href={fullImageUrl} />
     </Helmet>
   );
 };

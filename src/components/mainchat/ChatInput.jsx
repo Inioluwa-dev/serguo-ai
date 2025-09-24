@@ -13,7 +13,9 @@ const ChatInput = ({
   imagePreview, 
   selectedImage, 
   removeImagePreview, 
-  isHighlighted 
+  isHighlighted,
+  isRequestActive,
+  stopCurrentRequest
 }) => {
   return (
     <div className="p-1 sm:p-2 md:p-4 border-t border-gray-800 dark:border-gray-700 bg-primary overflow-hidden">
@@ -62,15 +64,26 @@ const ChatInput = ({
             className="hidden"
           />
           
-          {/* Send Button */}
-          <button
-            type="submit"
-            disabled={!inputValue.trim() && !selectedImage}
-            className="absolute right-1 sm:right-1.5 md:right-2 top-1/2 transform -translate-y-1/2 p-1 sm:p-1.5 md:p-2 bg-tertiary hover-bg-primary disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer rounded-full transition-colors ultra-mobile-button small-mobile-button"
-            title={selectedImage ? "Send image" : "Send message"}
-          >
-            <FiSend className="text-primary text-xs sm:text-xs md:text-sm ultra-mobile-icon small-mobile-icon" />
-          </button>
+          {/* Send/Stop Button */}
+          {isRequestActive ? (
+            <button
+              type="button"
+              onClick={stopCurrentRequest}
+              className="absolute right-1 sm:right-1.5 md:right-2 top-1/2 transform -translate-y-1/2 p-1 sm:p-1.5 md:p-2 bg-red-500 hover:bg-red-600 text-white cursor-pointer rounded-full transition-colors ultra-mobile-button small-mobile-button"
+              title="Stop request"
+            >
+              <div className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-white rounded-sm"></div>
+            </button>
+          ) : (
+            <button
+              type="submit"
+              disabled={!inputValue.trim() && !selectedImage}
+              className="absolute right-1 sm:right-1.5 md:right-2 top-1/2 transform -translate-y-1/2 p-1 sm:p-1.5 md:p-2 bg-tertiary hover-bg-primary disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer rounded-full transition-colors ultra-mobile-button small-mobile-button"
+              title={selectedImage ? "Send image" : "Send message"}
+            >
+              <FiSend className="text-primary text-xs sm:text-xs md:text-sm ultra-mobile-icon small-mobile-icon" />
+            </button>
+          )}
         </div>
         
         {/* Text Selection Indicator */}

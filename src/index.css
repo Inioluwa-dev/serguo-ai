@@ -55,6 +55,42 @@
    ========================================================================== */
 @import "./styles/utilities.css";
 
+/* ==========================================================================
+   9. CUSTOM SCROLLBAR STYLES
+   ========================================================================== */
+
+/* Webkit Scrollbar Styles */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1F2937;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #4B5563;
+  border-radius: 4px;
+  border: 1px solid #374151;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #6B7280;
+}
+
+::-webkit-scrollbar-corner {
+  background: #1F2937;
+}
+
+/* Firefox Scrollbar Styles */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #4B5563 #1F2937;
+}
+
+
 /*
  * ==========================================================================
  * END OF MAIN STYLESHEET

@@ -78,21 +78,72 @@ const MessageItem = ({ message, searchQuery, copiedMessageId, copyMessage }) => 
                  {/* Text Content */}
                  {message.content && (
                    <div>
-                     <p className="text-xs sm:text-sm leading-relaxed text-gray-900 dark:text-white">
-                       {searchQuery ? (
-                         message.content.split(new RegExp(`(${searchQuery})`, 'gi')).map((part, index) => 
-                           part.toLowerCase() === searchQuery.toLowerCase() ? (
-                             <mark key={index} className="bg-yellow-400 text-black px-1 rounded">
-                               {part.replace(/[<>]/g, '')}
-                             </mark>
-                           ) : (
-                             part.replace(/[<>]/g, '')
+                     {/* Check if this is extracted text (has special formatting) */}
+                     {message.isExtractedText ? (
+                       <div className="bg-gray-900 p-4 rounded-lg border border-gray-700">
+                         <div className="flex items-center space-x-2 mb-3">
+                           <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                           <span className="text-xs font-medium text-green-400">Extracted Text</span>
+                         </div>
+                         <div className="text-sm leading-relaxed text-gray-100 whitespace-pre-wrap">
+                           {(() => {
+                             const content = searchQuery ? 
+                               message.content.split(new RegExp(`(${searchQuery})`, 'gi')).map((part, index) => 
+                                 part.toLowerCase() === searchQuery.toLowerCase() ? (
+                                   <mark key={index} className="bg-yellow-400 text-black px-1 rounded">
+                                     {part.replace(/[<>]/g, '')}
+                                   </mark>
+                                 ) : (
+                                   part.replace(/[<>]/g, '')
+                                 )
+                               ) : 
+                               message.content.replace(/[<>]/g, '');
+                             
+                             // Simple markdown rendering
+                             const lines = content.split('\n');
+                             return lines.map((line, index) => {
+                               if (line.startsWith('**') && line.endsWith('**')) {
+                                 return (
+                                   <div key={index} className="font-bold text-white mb-2">
+                                     {line.replace(/\*\*/g, '')}
+                                   </div>
+                                 );
+                               } else if (line.startsWith('* ') || line.startsWith('- ')) {
+                                 return (
+                                   <div key={index} className="ml-4 mb-1">
+                                     • {line.substring(2)}
+                                   </div>
+                                 );
+                               } else if (line.trim() === '') {
+                                 return <div key={index} className="mb-2"></div>;
+                               } else {
+                                 return (
+                                   <div key={index} className="mb-1">
+                                     {line}
+                                   </div>
+                                 );
+                               }
+                             });
+                           })()}
+                         </div>
+                       </div>
+                     ) : (
+                       <p className="text-xs sm:text-sm leading-relaxed text-gray-900 dark:text-white">
+                         {searchQuery ? (
+                           message.content.split(new RegExp(`(${searchQuery})`, 'gi')).map((part, index) => 
+                             part.toLowerCase() === searchQuery.toLowerCase() ? (
+                               <mark key={index} className="bg-yellow-400 text-black px-1 rounded">
+                                 {part.replace(/[<>]/g, '')}
+                               </mark>
+                             ) : (
+                               part.replace(/[<>]/g, '')
+                             )
                            )
-                         )
-                       ) : (
-                         message.content.replace(/[<>]/g, '')
-                       )}
-                     </p>
+                         ) : (
+                           message.content.replace(/[<>]/g, '')
+                         )}
+                       </p>
+                     )}
               
               {/* Copy Button */}
               <div className="mt-2 flex items-center justify-between">

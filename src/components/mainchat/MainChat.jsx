@@ -15,6 +15,10 @@ const MainChat = ({ onNewChat, messages, setMessages, searchQuery }) => {
   const [isHighlighted, setIsHighlighted] = useState(false);
   const [copiedMessageId, setCopiedMessageId] = useState(null);
   const [apiError, setApiError] = useState(null);
+  const [isRetrying, setIsRetrying] = useState(false);
+  const [isRequestActive, setIsRequestActive] = useState(false);
+  const [requestTimeout, setRequestTimeout] = useState(null);
+  const abortControllerRef = useRef(null);
   const messagesEndRef = useRef(null);
   const [settings, setSettings] = useState({
     autoSave: true,
@@ -24,6 +28,72 @@ const MainChat = ({ onNewChat, messages, setMessages, searchQuery }) => {
     compactMode: false,
     fontSize: 'medium'
   });
+
+  // Function to stop the current request
+  const stopCurrentRequest = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    
+    if (requestTimeout) {
+      clearTimeout(requestTimeout);
+      setRequestTimeout(null);
+    }
+    
+    setIsTyping(false);
+    setIsRequestActive(false);
+    setIsRetrying(false);
+    setApiError(null);
+    
+    // Add a message indicating the request was cancelled
+    const cancelledMessage = {
+      id: Date.now() + 1,
+      content: "Request cancelled by user.",
+      isUser: false,
+      timestamp: new Date().toISOString()
+    };
+    setMessages(prev => [...prev, cancelledMessage]);
+  };
+
+  // Utility function to safely save to localStorage with size management
+  const safeSaveToLocalStorage = (messagesToSave) => {
+    try {
+      const jsonString = JSON.stringify(messagesToSave);
+      
+      // Check if the data is too large (localStorage limit is usually 5-10MB)
+      if (jsonString.length > 4 * 1024 * 1024) { // 4MB limit
+        console.warn('Messages too large for localStorage, truncating...');
+        
+        // Keep only the last 50 messages to reduce size
+        const truncatedMessages = messagesToSave.slice(-50);
+        const truncatedJson = JSON.stringify(truncatedMessages);
+        
+        if (truncatedJson.length > 4 * 1024 * 1024) {
+          // If still too large, keep only last 25 messages
+          const finalMessages = messagesToSave.slice(-25);
+          localStorage.setItem('serguo-messages', JSON.stringify(finalMessages));
+          console.log('Saved only last 25 messages due to size limit');
+        } else {
+          localStorage.setItem('serguo-messages', JSON.stringify(truncatedMessages));
+          console.log('Saved last 50 messages due to size limit');
+        }
+      } else {
+        localStorage.setItem('serguo-messages', jsonString);
+      }
+    } catch (error) {
+      console.warn('Failed to save to localStorage:', error.message);
+      
+      // Last resort: save only the most recent messages
+      try {
+        const recentMessages = messagesToSave.slice(-10);
+        localStorage.setItem('serguo-messages', JSON.stringify(recentMessages));
+        console.log('Saved only last 10 messages as fallback');
+      } catch (fallbackError) {
+        console.error('Complete localStorage failure:', fallbackError.message);
+      }
+    }
+  };
 
   // Load settings from localStorage
   React.useEffect(() => {
@@ -67,7 +137,7 @@ const MainChat = ({ onNewChat, messages, setMessages, searchQuery }) => {
       const limitedMessages = messages.slice(-messageLimit);
       setMessages(limitedMessages);
       if (settings.autoSave) {
-        localStorage.setItem('serguo-messages', JSON.stringify(limitedMessages));
+        safeSaveToLocalStorage(limitedMessages);
       }
     }
   }, [messages.length]);
@@ -324,6 +394,7 @@ const MainChat = ({ onNewChat, messages, setMessages, searchQuery }) => {
   };
 
 
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -337,6 +408,121 @@ const MainChat = ({ onNewChat, messages, setMessages, searchQuery }) => {
       };
       setMessages(prev => [...prev, offlineMessage]);
       return;
+    }
+    
+    // Check for text extraction request
+    if (inputValue.toLowerCase().includes('extract text') || 
+        inputValue.toLowerCase().includes('extract the text') ||
+        inputValue.toLowerCase().includes('show me the text') ||
+        inputValue.toLowerCase().includes('text extraction')) {
+      // If there's an image, extract text from it
+      if (selectedImage) {
+        const userMessage = {
+          id: Date.now(),
+          content: inputValue,
+          image: imagePreview,
+          isUser: true,
+          timestamp: new Date().toISOString()
+        };
+        
+        setMessages(prev => [...prev, userMessage]);
+        setInputValue('');
+        setSelectedImage(null);
+        setImagePreview(null);
+        
+        // Get AI response for text extraction
+        setIsTyping(true);
+        setApiError(null);
+        setIsRetrying(false);
+        setIsRequestActive(true);
+        
+        // Create AbortController for request cancellation
+        abortControllerRef.current = new AbortController();
+        
+        // Set 30-second timeout
+        const timeout = setTimeout(() => {
+          if (abortControllerRef.current) {
+            abortControllerRef.current.abort();
+            setIsTyping(false);
+            setIsRequestActive(false);
+            setIsRetrying(false);
+            setApiError("Text extraction timed out after 30 seconds. Please try again.");
+            
+            const timeoutMessage = {
+              id: Date.now() + 1,
+              content: "Text extraction timed out after 30 seconds. Please try again.",
+              isUser: false,
+              timestamp: new Date().toISOString()
+            };
+            setMessages(prev => [...prev, timeoutMessage]);
+          }
+        }, 30000);
+        setRequestTimeout(timeout);
+        
+        try {
+          const aiResponse = await getContextualResponse(
+            messages, 
+            "Please extract all text from this image and format it nicely with proper structure. Use markdown formatting with headings, bold text, and organized sections. Make it look professional and well-structured, not just raw text. Include all visible text, numbers, and any other textual content.",
+            imagePreview,
+            abortControllerRef.current.signal
+          );
+
+          // Create a single AI message that contains both analysis and extracted text
+          const aiMessage = {
+            id: Date.now() + 1,
+            content: aiResponse,
+            isUser: false,
+            isExtractedText: true, // Mark this as extracted text for special formatting
+            timestamp: new Date().toISOString()
+          };
+          
+          setMessages(prev => [...prev, aiMessage]);
+          setIsTyping(false);
+          setIsRequestActive(false);
+          
+          // Clear timeout and abort controller
+          if (requestTimeout) {
+            clearTimeout(requestTimeout);
+            setRequestTimeout(null);
+          }
+          abortControllerRef.current = null;
+          
+          // Auto-save if enabled
+          if (settings.autoSave) {
+            // Create a copy of the AI message with truncated content for storage
+            const storageMessage = {
+              ...aiMessage,
+              content: aiMessage.content.length > 5000 
+                ? aiMessage.content.substring(0, 5000) + '... [Content truncated for storage]'
+                : aiMessage.content
+            };
+            
+            safeSaveToLocalStorage([...messages, userMessage, storageMessage]);
+          }
+          
+        } catch (error) {
+          console.error('Error extracting text:', error);
+          setIsTyping(false);
+          setIsRequestActive(false);
+          setIsRetrying(false);
+          
+          // Clear timeout and abort controller
+          if (requestTimeout) {
+            clearTimeout(requestTimeout);
+            setRequestTimeout(null);
+          }
+          abortControllerRef.current = null;
+          
+          // Check if request was aborted
+          if (error.name === 'AbortError') {
+            console.log('Text extraction was aborted');
+            return;
+          }
+          
+          setApiError(error.message);
+        }
+        return;
+      }
     }
     
     if (inputValue.trim() || selectedImage) {
@@ -364,32 +550,47 @@ const MainChat = ({ onNewChat, messages, setMessages, searchQuery }) => {
             ...userMessage,
             image: userMessage.image ? '[IMAGE_DATA]' : null // Replace image data with placeholder
           };
-          localStorage.setItem('serguo-messages', JSON.stringify([...messages, messageForStorage]));
+          safeSaveToLocalStorage([...messages, messageForStorage]);
         } catch (error) {
           console.warn('Failed to save to localStorage:', error.message);
-          // If localStorage is full, try to clear old messages
-          try {
-            const recentMessages = messages.slice(-10); // Keep only last 10 messages
-            const messageForStorage = {
-              ...userMessage,
-              image: userMessage.image ? '[IMAGE_DATA]' : null
-            };
-            localStorage.setItem('serguo-messages', JSON.stringify([...recentMessages, messageForStorage]));
-          } catch (retryError) {
-            console.warn('Failed to save even with reduced messages:', retryError.message);
-          }
         }
       }
       
       // Get AI response from Gemini API
       setIsTyping(true);
       setApiError(null);
+      setIsRetrying(false);
+      setIsRequestActive(true);
+      
+      // Create AbortController for request cancellation
+      abortControllerRef.current = new AbortController();
+      
+      // Set 30-second timeout
+      const timeout = setTimeout(() => {
+        if (abortControllerRef.current) {
+          abortControllerRef.current.abort();
+          setIsTyping(false);
+          setIsRequestActive(false);
+          setIsRetrying(false);
+          setApiError("Request timed out after 30 seconds. Please try again.");
+          
+          const timeoutMessage = {
+            id: Date.now() + 1,
+            content: "Request timed out after 30 seconds. Please try again.",
+            isUser: false,
+            timestamp: new Date().toISOString()
+          };
+          setMessages(prev => [...prev, timeoutMessage]);
+        }
+      }, 30000);
+      setRequestTimeout(timeout);
       
       try {
         const aiResponse = await getContextualResponse(
           messages, 
           inputValue.trim() || "Please analyze this image", 
-          imagePreview
+          imagePreview,
+          abortControllerRef.current.signal
         );
 
         const aiMessage = {
@@ -401,25 +602,45 @@ const MainChat = ({ onNewChat, messages, setMessages, searchQuery }) => {
         
         setMessages(prev => [...prev, aiMessage]);
         setIsTyping(false);
+        setIsRequestActive(false);
+        
+        // Clear timeout and abort controller
+        if (requestTimeout) {
+          clearTimeout(requestTimeout);
+          setRequestTimeout(null);
+        }
+        abortControllerRef.current = null;
         
         // Play receive sound
         playSound('receive');
         
         // Auto-save if enabled (skip images to avoid quota issues)
         if (settings.autoSave) {
-          try {
-            const messageForStorage = {
-              ...aiMessage,
-              image: aiMessage.image ? '[IMAGE_DATA]' : null
-            };
-            localStorage.setItem('serguo-messages', JSON.stringify([...messages, userMessage, messageForStorage]));
-          } catch (error) {
-            console.warn('Failed to save AI response to localStorage:', error.message);
-          }
+          const messageForStorage = {
+            ...aiMessage,
+            image: aiMessage.image ? '[IMAGE_DATA]' : null
+          };
+          safeSaveToLocalStorage([...messages, userMessage, messageForStorage]);
         }
       } catch (error) {
         console.error('Error getting AI response:', error);
         setIsTyping(false);
+        setIsRequestActive(false);
+        setIsRetrying(false);
+        
+        // Clear timeout and abort controller
+        if (requestTimeout) {
+          clearTimeout(requestTimeout);
+          setRequestTimeout(null);
+        }
+        abortControllerRef.current = null;
+        
+        // Check if request was aborted
+        if (error.name === 'AbortError') {
+          console.log('Request was aborted');
+          return;
+        }
+        
         setApiError(error.message);
         
         // Fallback response
@@ -624,6 +845,7 @@ const MainChat = ({ onNewChat, messages, setMessages, searchQuery }) => {
       <StatusIndicators 
         apiError={apiError}
         setApiError={setApiError}
+        isRetrying={isRetrying}
       />
 
       {/* Messages Area - Flexible height with top padding for fixed header and bottom padding for fixed input */}
@@ -654,8 +876,11 @@ const MainChat = ({ onNewChat, messages, setMessages, searchQuery }) => {
           selectedImage={selectedImage}
           removeImagePreview={removeImagePreview}
           isHighlighted={isHighlighted}
+          isRequestActive={isRequestActive}
+          stopCurrentRequest={stopCurrentRequest}
         />
       </div>
+
     </div>
   );
 };
