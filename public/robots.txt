@@ -1,0 +1,65 @@
+# Serguo AI - Robots.txt
+# AI-powered Image to Text Assistant
+
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://serguo-ai.web.app/sitemap.xml
+
+# Crawl-delay for respectful crawling
+Crawl-delay: 1
+
+# Allow all major search engines
+User-agent: Googlebot
+Allow: /
+Crawl-delay: 1
+
+User-agent: Bingbot
+Allow: /
+Crawl-delay: 1
+
+User-agent: Slurp
+Allow: /
+Crawl-delay: 1
+
+User-agent: DuckDuckBot
+Allow: /
+Crawl-delay: 1
+
+User-agent: Baiduspider
+Allow: /
+Crawl-delay: 1
+
+User-agent: YandexBot
+Allow: /
+Crawl-delay: 1
+
+User-agent: facebookexternalhit
+Allow: /
+
+User-agent: Twitterbot
+Allow: /
+
+User-agent: LinkedInBot
+Allow: /
+
+# Disallow admin or sensitive areas (if any)
+Disallow: /admin/
+Disallow: /api/
+Disallow: /_internal/
+
+# Allow important files
+Allow: /serguo.jpeg
+Allow: /mr_h.png
+Allow: /favicon.ico
+Allow: /manifest.json
+
+# Host declaration
+Host: serguo-ai.web.app
+
+# Additional information
+# Serguo AI - Your Image to Text AI Assistant
+# Powered by Google Gemini AI
+# Created by Mr Heritage (Olayoriju Inioluwa)
+# Free to use - No registration required
