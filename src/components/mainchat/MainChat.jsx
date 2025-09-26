@@ -19,6 +19,7 @@ const MainChat = ({ onNewChat, messages, setMessages, searchQuery }) => {
   const [isRequestActive, setIsRequestActive] = useState(false);
   const [requestTimeout, setRequestTimeout] = useState(null);
   const abortControllerRef = useRef(null);
+  const currentTimeoutRef = useRef(null);
   const messagesEndRef = useRef(null);
   const [settings, setSettings] = useState({
     autoSave: true,
@@ -28,12 +29,18 @@ const MainChat = ({ onNewChat, messages, setMessages, searchQuery }) => {
     compactMode: false,
     fontSize: 'medium'
   });
+  const audioContextRef = useRef(null);
 
   // Function to stop the current request
   const stopCurrentRequest = () => {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
       abortControllerRef.current = null;
+    }
+    
+    if (currentTimeoutRef.current) {
+      clearTimeout(currentTimeoutRef.current);
+      currentTimeoutRef.current = null;
     }
     
     if (requestTimeout) {
@@ -59,24 +66,35 @@ const MainChat = ({ onNewChat, messages, setMessages, searchQuery }) => {
   // Utility function to safely save to localStorage with size management
   const safeSaveToLocalStorage = (messagesToSave) => {
     try {
-      const jsonString = JSON.stringify(messagesToSave);
+      // Optimize messages before saving - remove large image data and truncate content
+      const optimizedMessages = messagesToSave.map(msg => ({
+        id: msg.id,
+        content: msg.content ? msg.content.substring(0, 2000) : '', // Limit content to 2000 chars
+        isUser: msg.isUser,
+        timestamp: msg.timestamp,
+        isExtractedText: msg.isExtractedText,
+        // Remove image data to save space
+        image: null
+      }));
+      
+      const jsonString = JSON.stringify(optimizedMessages);
       
       // Check if the data is too large (localStorage limit is usually 5-10MB)
-      if (jsonString.length > 4 * 1024 * 1024) { // 4MB limit
+      if (jsonString.length > 2 * 1024 * 1024) { // 2MB limit (more conservative)
         console.warn('Messages too large for localStorage, truncating...');
         
-        // Keep only the last 50 messages to reduce size
-        const truncatedMessages = messagesToSave.slice(-50);
+        // Keep only the last 30 messages to reduce size
+        const truncatedMessages = optimizedMessages.slice(-30);
         const truncatedJson = JSON.stringify(truncatedMessages);
         
-        if (truncatedJson.length > 4 * 1024 * 1024) {
-          // If still too large, keep only last 25 messages
-          const finalMessages = messagesToSave.slice(-25);
+        if (truncatedJson.length > 2 * 1024 * 1024) {
+          // If still too large, keep only last 15 messages
+          const finalMessages = optimizedMessages.slice(-15);
           localStorage.setItem('serguo-messages', JSON.stringify(finalMessages));
-          console.log('Saved only last 25 messages due to size limit');
+          console.log('Saved only last 15 messages due to size limit');
         } else {
           localStorage.setItem('serguo-messages', JSON.stringify(truncatedMessages));
-          console.log('Saved last 50 messages due to size limit');
+          console.log('Saved last 30 messages due to size limit');
         }
       } else {
         localStorage.setItem('serguo-messages', jsonString);
@@ -86,9 +104,16 @@ const MainChat = ({ onNewChat, messages, setMessages, searchQuery }) => {
       
       // Last resort: save only the most recent messages
       try {
-        const recentMessages = messagesToSave.slice(-10);
+        const recentMessages = messagesToSave.slice(-5).map(msg => ({
+          id: msg.id,
+          content: msg.content ? msg.content.substring(0, 500) : '',
+          isUser: msg.isUser,
+          timestamp: msg.timestamp,
+          isExtractedText: msg.isExtractedText,
+          image: null
+        }));
         localStorage.setItem('serguo-messages', JSON.stringify(recentMessages));
-        console.log('Saved only last 10 messages as fallback');
+        console.log('Saved only last 5 messages as fallback');
       } catch (fallbackError) {
         console.error('Complete localStorage failure:', fallbackError.message);
       }
@@ -130,9 +155,9 @@ const MainChat = ({ onNewChat, messages, setMessages, searchQuery }) => {
     }
   }, []);
 
-  // Apply message limit
+  // Apply message limit and periodic cleanup
   React.useEffect(() => {
-    const messageLimit = parseInt(localStorage.getItem('messageLimit') || '100');
+    const messageLimit = parseInt(localStorage.getItem('messageLimit') || '50'); // Reduced from 100 to 50
     if (messages.length > messageLimit) {
       const limitedMessages = messages.slice(-messageLimit);
       setMessages(limitedMessages);
@@ -140,7 +165,16 @@ const MainChat = ({ onNewChat, messages, setMessages, searchQuery }) => {
         safeSaveToLocalStorage(limitedMessages);
       }
     }
-  }, [messages.length]);
+    
+    // Periodic cleanup - check localStorage size every 10 messages
+    if (messages.length % 10 === 0 && settings.autoSave) {
+      const savedMessages = localStorage.getItem('serguo-messages');
+      if (savedMessages && savedMessages.length > 1.5 * 1024 * 1024) { // 1.5MB threshold
+        console.log('Performing periodic localStorage cleanup...');
+        safeSaveToLocalStorage(messages);
+      }
+    }
+  }, [messages.length, settings.autoSave]);
 
   // Enhanced auto-scroll function - scroll to last message before input
   const scrollToBottom = () => {
@@ -163,18 +197,16 @@ const MainChat = ({ onNewChat, messages, setMessages, searchQuery }) => {
   // Auto-scroll to bottom when messages change
   useEffect(() => {
     // Multiple attempts to ensure scrolling works - more aggressive
-    const timeout1 = setTimeout(scrollToBottom, 10);
-    const timeout2 = setTimeout(scrollToBottom, 50);
-    const timeout3 = setTimeout(scrollToBottom, 150);
-    const timeout4 = setTimeout(scrollToBottom, 300);
-    const timeout5 = setTimeout(scrollToBottom, 500);
+    const timeouts = [
+      setTimeout(scrollToBottom, 10),
+      setTimeout(scrollToBottom, 50),
+      setTimeout(scrollToBottom, 150),
+      setTimeout(scrollToBottom, 300),
+      setTimeout(scrollToBottom, 500)
+    ];
     
     return () => {
-      clearTimeout(timeout1);
-      clearTimeout(timeout2);
-      clearTimeout(timeout3);
-      clearTimeout(timeout4);
-      clearTimeout(timeout5);
+      timeouts.forEach(timeout => clearTimeout(timeout));
     };
   }, [messages, isTyping]);
 
@@ -182,23 +214,25 @@ const MainChat = ({ onNewChat, messages, setMessages, searchQuery }) => {
   useEffect(() => {
     if (messages.length > 0) {
       // Multiple attempts for initial load
-      const timeout1 = setTimeout(scrollToBottom, 100);
-      const timeout2 = setTimeout(scrollToBottom, 500);
-      const timeout3 = setTimeout(scrollToBottom, 1000);
+      const timeouts = [
+        setTimeout(scrollToBottom, 100),
+        setTimeout(scrollToBottom, 500),
+        setTimeout(scrollToBottom, 1000)
+      ];
       
       return () => {
-        clearTimeout(timeout1);
-        clearTimeout(timeout2);
-        clearTimeout(timeout3);
+        timeouts.forEach(timeout => clearTimeout(timeout));
       };
     }
   }, []);
 
   // Force scroll to bottom on page load
   useEffect(() => {
+    const timeouts = [];
+    
     const handleLoad = () => {
-      setTimeout(scrollToBottom, 100);
-      setTimeout(scrollToBottom, 500);
+      timeouts.push(setTimeout(scrollToBottom, 100));
+      timeouts.push(setTimeout(scrollToBottom, 500));
     };
     
     // Scroll on page load
@@ -208,7 +242,18 @@ const MainChat = ({ onNewChat, messages, setMessages, searchQuery }) => {
     window.addEventListener('load', handleLoad);
     
     return () => {
+      timeouts.forEach(timeout => clearTimeout(timeout));
       window.removeEventListener('load', handleLoad);
+    };
+  }, []);
+
+  // Cleanup AudioContext on unmount
+  useEffect(() => {
+    return () => {
+      if (audioContextRef.current) {
+        audioContextRef.current.close();
+        audioContextRef.current = null;
+      }
     };
   }, []);
 
@@ -231,7 +276,12 @@ const MainChat = ({ onNewChat, messages, setMessages, searchQuery }) => {
         return;
       }
       
-      const audioContext = new AudioContext();
+      // Reuse existing AudioContext or create new one
+      if (!audioContextRef.current) {
+        audioContextRef.current = new AudioContext();
+      }
+      
+      const audioContext = audioContextRef.current;
       
       // Resume context if suspended (required for iOS)
       if (audioContext.state === 'suspended') {
@@ -457,6 +507,7 @@ const MainChat = ({ onNewChat, messages, setMessages, searchQuery }) => {
             setMessages(prev => [...prev, timeoutMessage]);
           }
         }, 30000);
+        currentTimeoutRef.current = timeout;
         setRequestTimeout(timeout);
         
         try {
@@ -481,10 +532,9 @@ const MainChat = ({ onNewChat, messages, setMessages, searchQuery }) => {
           setIsRequestActive(false);
           
           // Clear timeout and abort controller
-          if (requestTimeout) {
-            clearTimeout(requestTimeout);
-            setRequestTimeout(null);
-          }
+          clearTimeout(timeout);
+          currentTimeoutRef.current = null;
+          setRequestTimeout(null);
           abortControllerRef.current = null;
           
           // Auto-save if enabled
@@ -507,10 +557,9 @@ const MainChat = ({ onNewChat, messages, setMessages, searchQuery }) => {
           setIsRetrying(false);
           
           // Clear timeout and abort controller
-          if (requestTimeout) {
-            clearTimeout(requestTimeout);
-            setRequestTimeout(null);
-          }
+          clearTimeout(timeout);
+          currentTimeoutRef.current = null;
+          setRequestTimeout(null);
           abortControllerRef.current = null;
           
           // Check if request was aborted
@@ -583,6 +632,7 @@ const MainChat = ({ onNewChat, messages, setMessages, searchQuery }) => {
           setMessages(prev => [...prev, timeoutMessage]);
         }
       }, 30000);
+      currentTimeoutRef.current = timeout;
       setRequestTimeout(timeout);
       
       try {
@@ -605,10 +655,9 @@ const MainChat = ({ onNewChat, messages, setMessages, searchQuery }) => {
         setIsRequestActive(false);
         
         // Clear timeout and abort controller
-        if (requestTimeout) {
-          clearTimeout(requestTimeout);
-          setRequestTimeout(null);
-        }
+        clearTimeout(timeout);
+        currentTimeoutRef.current = null;
+        setRequestTimeout(null);
         abortControllerRef.current = null;
         
         // Play receive sound
@@ -629,10 +678,9 @@ const MainChat = ({ onNewChat, messages, setMessages, searchQuery }) => {
         setIsRetrying(false);
         
         // Clear timeout and abort controller
-        if (requestTimeout) {
-          clearTimeout(requestTimeout);
-          setRequestTimeout(null);
-        }
+        clearTimeout(timeout);
+        currentTimeoutRef.current = null;
+        setRequestTimeout(null);
         abortControllerRef.current = null;
         
         // Check if request was aborted
@@ -862,8 +910,8 @@ const MainChat = ({ onNewChat, messages, setMessages, searchQuery }) => {
         />
       </div>
       
-      {/* Input Area - Fixed at bottom */}
-      <div className="fixed bottom-0 left-0 right-0 z-30 bg-primary border-t border-gray-800 dark:border-gray-700 mb-0">
+      {/* Input Area - Fixed at bottom with mobile keyboard support */}
+      <div className="fixed bottom-0 left-0 right-0 z-30 bg-primary border-t border-gray-800 dark:border-gray-700 mb-0 safe-area-pb">
         <ChatInput 
           inputValue={inputValue}
           setInputValue={setInputValue}

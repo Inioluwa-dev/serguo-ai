@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { FiSend, FiLink } from 'react-icons/fi';
 import FilePreview from './FilePreview';
 
@@ -17,9 +17,46 @@ const ChatInput = ({
   isRequestActive,
   stopCurrentRequest
 }) => {
+  // Handle mobile keyboard visibility
+  useEffect(() => {
+    const handleFocus = () => {
+      // Scroll to input when focused on mobile
+      setTimeout(() => {
+        const input = document.querySelector('input[type="text"]');
+        if (input && window.innerWidth <= 768) {
+          input.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'center',
+            inline: 'nearest'
+          });
+        }
+      }, 300);
+    };
+
+    const handleBlur = () => {
+      // Reset scroll when input loses focus
+      if (window.innerWidth <= 768) {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    };
+
+    const input = document.querySelector('input[type="text"]');
+    if (input) {
+      input.addEventListener('focus', handleFocus);
+      input.addEventListener('blur', handleBlur);
+    }
+
+    return () => {
+      if (input) {
+        input.removeEventListener('focus', handleFocus);
+        input.removeEventListener('blur', handleBlur);
+      }
+    };
+  }, []);
+
   return (
-    <div className="p-1 sm:p-2 md:p-4 border-t border-gray-800 dark:border-gray-700 bg-primary overflow-hidden">
-      <form onSubmit={handleSubmit} className="max-w-[280px] xs:max-w-sm sm:max-w-md md:max-w-lg mx-auto ultra-mobile-form small-mobile-form">
+    <div className="p-4 border-t border-gray-800 dark:border-gray-700 bg-primary safe-area-pb">
+      <form onSubmit={handleSubmit} className="max-w-2xl mx-auto">
         {/* File Preview */}
         <FilePreview 
           imagePreview={imagePreview}
@@ -38,10 +75,10 @@ const ChatInput = ({
             onKeyUp={handleTextSelection}
             onKeyDown={handleKeyDown}
             placeholder={imagePreview ? "Add a message to go with your image..." : "Message Serguo AI..."}
-            className={`w-full pl-16 sm:pl-10 md:pl-14 pr-8 sm:pr-10 md:pr-14 py-2 sm:py-2.5 md:py-3 input-bg border input-border rounded-2xl input-text placeholder-gray-400 focus:outline-none focus-border focus:ring-1 focus:ring-gray-600 text-xs sm:text-sm md:text-base theme-transition pulse-glow ultra-mobile-input small-mobile-input ${
+            className={`w-full pl-12 pr-12 py-3 input-bg border input-border rounded-full input-text placeholder-gray-400 focus:outline-none focus-border focus:ring-1 focus:ring-gray-600 text-base theme-transition ${
               isHighlighted ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-600' : ''
             }`}
-            style={{borderRadius: '16px'}}
+            style={{borderRadius: '50px'}}
             autoFocus
           />
           
@@ -49,10 +86,10 @@ const ChatInput = ({
           <button
             type="button"
             onClick={() => document.getElementById('image-upload').click()}
-            className="absolute left-1 sm:left-1.5 md:left-2 top-1/2 transform -translate-y-1/2 p-0.5 sm:p-1 md:p-1.5 text-muted hover:text-primary transition-colors cursor-pointer ultra-mobile-button small-mobile-button"
+            className="absolute left-3 top-1/2 transform -translate-y-1/2 p-2 text-muted hover:text-primary transition-colors cursor-pointer"
             title="Upload file"
           >
-            <FiLink className="text-xs sm:text-sm md:text-lg ultra-mobile-icon small-mobile-icon" />
+            <FiLink className="text-lg" />
           </button>
           
           {/* Hidden File Input */}
@@ -69,19 +106,19 @@ const ChatInput = ({
             <button
               type="button"
               onClick={stopCurrentRequest}
-              className="absolute right-1 sm:right-1.5 md:right-2 top-1/2 transform -translate-y-1/2 p-1 sm:p-1.5 md:p-2 bg-red-500 hover:bg-red-600 text-white cursor-pointer rounded-full transition-colors ultra-mobile-button small-mobile-button"
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 p-2 bg-red-500 hover:bg-red-600 text-white cursor-pointer rounded-full transition-colors"
               title="Stop request"
             >
-              <div className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-white rounded-sm"></div>
+              <div className="w-4 h-4 border-2 border-white rounded-sm"></div>
             </button>
           ) : (
             <button
               type="submit"
               disabled={!inputValue.trim() && !selectedImage}
-              className="absolute right-1 sm:right-1.5 md:right-2 top-1/2 transform -translate-y-1/2 p-1 sm:p-1.5 md:p-2 bg-tertiary hover-bg-primary disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer rounded-full transition-colors ultra-mobile-button small-mobile-button"
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 p-2 bg-tertiary hover-bg-primary disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer rounded-full transition-colors"
               title={selectedImage ? "Send image" : "Send message"}
             >
-              <FiSend className="text-primary text-xs sm:text-xs md:text-sm ultra-mobile-icon small-mobile-icon" />
+              <FiSend className="text-primary text-sm" />
             </button>
           )}
         </div>
@@ -97,7 +134,7 @@ const ChatInput = ({
         )}
         
         {/* Made by Mr Heritage */}
-        <div className="text-center mt-0.5 sm:mt-1 md:mt-2">
+        <div className="text-center mt-2">
           <p className="text-xs text-muted">made by mr heritage</p>
         </div>
       </form>

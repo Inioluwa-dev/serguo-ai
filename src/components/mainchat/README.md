@@ -6,7 +6,7 @@ This folder contains the modular components that make up the MainChat functional
 
 ### Core Components
 
-- **MainChat.jsx** - Main orchestrator component that manages state and coordinates all other components
+- **MainChatjsx** - Main orchestrator component that manages state and coordinates all other components
 - **Header.jsx** - Site header with logo and title
 - **BackgroundBalls.jsx** - Animated background balls component
 - **StatusIndicators.jsx** - Offline and API error status indicators

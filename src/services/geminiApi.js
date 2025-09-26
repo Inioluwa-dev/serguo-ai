@@ -1,5 +1,5 @@
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
+const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent';
 
 /**
  * Send a message to Gemini API and get a response
@@ -72,6 +72,8 @@ export const sendToGemini = async (message, imageData = null, retryCount = 0, si
         throw new Error('API key invalid or expired. Please contact support.');
       } else if (response.status === 403) {
         throw new Error('Access forbidden. Please check your API permissions.');
+      } else if (response.status === 404) {
+        throw new Error('API endpoint not found. The model may not be available or the endpoint URL may be incorrect.');
       } else {
         throw new Error(`API request failed: ${response.status} ${response.statusText}`);
       }
@@ -99,7 +101,7 @@ export const sendToGemini = async (message, imageData = null, retryCount = 0, si
       console.log(`Retrying in ${delay}ms... (attempt ${retryCount + 1}/3)`);
       
       await new Promise(resolve => setTimeout(resolve, delay));
-      return await sendToGemini(message, imageData, retryCount + 1);
+      return await sendToGemini(message, imageData, retryCount + 1, signal);
     }
     
     // Return a fallback response based on the error
@@ -111,6 +113,8 @@ export const sendToGemini = async (message, imageData = null, retryCount = 0, si
       return "There's an issue with the API configuration. Please contact support.";
     } else if (error.message.includes('API request failed')) {
       return "I'm sorry, I'm having trouble connecting to the AI service right now. Please try again in a moment.";
+    } else if (error.message.includes('API endpoint not found')) {
+      return "The AI service endpoint is not available. Please check your API configuration or try again later.";
     } else if (error.message.includes('Invalid response structure')) {
       return "I received an unexpected response from the AI service. Please try again.";
     } else {
@@ -121,11 +125,12 @@ export const sendToGemini = async (message, imageData = null, retryCount = 0, si
 
 /**
  * Check if the API key is valid by making a test request
+ * @param {AbortSignal} signal - Optional abort signal for request cancellation
  * @returns {Promise<boolean>} - True if API key is valid
  */
-export const validateApiKey = async () => {
+export const validateApiKey = async (signal = null) => {
   try {
-    const testResponse = await sendToGemini("Hello");
+    const testResponse = await sendToGemini("Hello", null, 0, signal);
     return testResponse && testResponse.length > 0;
   } catch (error) {
     console.error('API key validation failed:', error);
