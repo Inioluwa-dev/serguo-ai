@@ -1,6 +1,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { HelmetProvider } from 'react-helmet-async';
+import cacheManager from './services/cacheManager';
+import { NotificationProvider } from './contexts/NotificationContext';
+import ErrorBoundary from './components/ErrorBoundary';
 import Sidebar from './components/Sidebar';
 import MainChat from './components/MainChat';
 import LoadingSpinner from './components/mainchat/LoadingSpinner';
@@ -23,15 +26,15 @@ function App() {
   const handleNewChat = () => {
     setMessages([]);
     setSearchQuery('');
-    // Clear localStorage
-    localStorage.removeItem('serguo-messages');
+    // Clear messages using cache manager
+    cacheManager.safeSaveToLocalStorage([]);
   };
 
   const handleClearChat = () => {
     setMessages([]);
     setSearchQuery('');
-    // Clear localStorage
-    localStorage.removeItem('serguo-messages');
+    // Clear messages using cache manager
+    cacheManager.safeSaveToLocalStorage([]);
   };
 
   // Show loading spinner while loading
@@ -44,8 +47,10 @@ function App() {
   }
 
   return (
-    <HelmetProvider>
-      <div className="h-screen bg-primary text-primary flex theme-transition">
+    <ErrorBoundary>
+      <HelmetProvider>
+        <NotificationProvider>
+          <div className="h-screen bg-primary text-primary flex theme-transition">
         {/* Mobile Header - Only visible on mobile */}
         <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-primary border-b border-gray-800 dark:border-gray-700 px-4 py-3 flex items-center justify-between backdrop-blur-sm bg-opacity-95">
           <div className="flex items-center gap-3">
@@ -100,7 +105,9 @@ function App() {
           />
         </div>
       </div>
-    </HelmetProvider>
+        </NotificationProvider>
+      </HelmetProvider>
+    </ErrorBoundary>
   );
 }
 

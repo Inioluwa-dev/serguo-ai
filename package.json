@@ -6,8 +6,13 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:analyze": "vite build --mode analyze",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "lint:fix": "eslint . --fix",
+    "preview": "vite preview",
+    "preview:build": "npm run build && npm run preview",
+    "type-check": "tsc --noEmit",
+    "test:build": "npm run build && npm run preview"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.13",

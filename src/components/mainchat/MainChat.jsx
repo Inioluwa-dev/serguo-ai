@@ -1,5 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { getContextualResponse } from '../../services/geminiApi';
+import cacheManager from '../../services/cacheManager';
+import { useNotification } from '../../contexts/NotificationContext';
 import SEO from '../seo/SEO';
 import Header from './Header';
 import BackgroundBalls from './BackgroundBalls';
@@ -30,6 +32,7 @@ const MainChat = ({ onNewChat, messages, setMessages, searchQuery }) => {
     fontSize: 'medium'
   });
   const audioContextRef = useRef(null);
+  const { showError, showWarning } = useNotification();
 
   // Function to stop the current request
   const stopCurrentRequest = () => {
@@ -63,81 +66,30 @@ const MainChat = ({ onNewChat, messages, setMessages, searchQuery }) => {
     setMessages(prev => [...prev, cancelledMessage]);
   };
 
-  // Utility function to safely save to localStorage with size management
+  // Enhanced cache management using the new cache manager
   const safeSaveToLocalStorage = (messagesToSave) => {
-    try {
-      // Optimize messages before saving - remove large image data and truncate content
-      const optimizedMessages = messagesToSave.map(msg => ({
-        id: msg.id,
-        content: msg.content ? msg.content.substring(0, 2000) : '', // Limit content to 2000 chars
-        isUser: msg.isUser,
-        timestamp: msg.timestamp,
-        isExtractedText: msg.isExtractedText,
-        // Remove image data to save space
-        image: null
-      }));
-      
-      const jsonString = JSON.stringify(optimizedMessages);
-      
-      // Check if the data is too large (localStorage limit is usually 5-10MB)
-      if (jsonString.length > 2 * 1024 * 1024) { // 2MB limit (more conservative)
-        console.warn('Messages too large for localStorage, truncating...');
-        
-        // Keep only the last 30 messages to reduce size
-        const truncatedMessages = optimizedMessages.slice(-30);
-        const truncatedJson = JSON.stringify(truncatedMessages);
-        
-        if (truncatedJson.length > 2 * 1024 * 1024) {
-          // If still too large, keep only last 15 messages
-          const finalMessages = optimizedMessages.slice(-15);
-          localStorage.setItem('serguo-messages', JSON.stringify(finalMessages));
-          console.log('Saved only last 15 messages due to size limit');
-        } else {
-          localStorage.setItem('serguo-messages', JSON.stringify(truncatedMessages));
-          console.log('Saved last 30 messages due to size limit');
-        }
-      } else {
-        localStorage.setItem('serguo-messages', jsonString);
-      }
-    } catch (error) {
-      console.warn('Failed to save to localStorage:', error.message);
-      
-      // Last resort: save only the most recent messages
-      try {
-        const recentMessages = messagesToSave.slice(-5).map(msg => ({
-          id: msg.id,
-          content: msg.content ? msg.content.substring(0, 500) : '',
-          isUser: msg.isUser,
-          timestamp: msg.timestamp,
-          isExtractedText: msg.isExtractedText,
-          image: null
-        }));
-        localStorage.setItem('serguo-messages', JSON.stringify(recentMessages));
-        console.log('Saved only last 5 messages as fallback');
-      } catch (fallbackError) {
-        console.error('Complete localStorage failure:', fallbackError.message);
-      }
-    }
+    cacheManager.safeSaveToLocalStorage(messagesToSave);
   };
 
-  // Load settings from localStorage
+  // Load settings and messages using enhanced cache manager
   React.useEffect(() => {
     const savedSettings = localStorage.getItem('serguo-settings');
     if (savedSettings) {
-      setSettings(JSON.parse(savedSettings));
+      const parsedSettings = JSON.parse(savedSettings);
+      setSettings(parsedSettings);
+      
+      // Update cache manager config with user settings
+      cacheManager.updateConfig({
+        maxMessages: parsedSettings.messageLimit || 50,
+        messageExpiryDays: parsedSettings.messageExpiryDays || 30
+      });
     }
     
     // Load saved messages if auto-save is enabled
-    const savedMessages = localStorage.getItem('serguo-messages');
-    if (savedMessages && settings.autoSave) {
-      try {
-        const parsedMessages = JSON.parse(savedMessages);
-        // Keep messages with placeholder image data but mark them as placeholders
-        const validMessages = parsedMessages.map(msg => ({
-          ...msg,
-          isImagePlaceholder: msg.image === '[IMAGE_DATA]'
-        }));
-        setMessages(validMessages);
+    if (settings.autoSave) {
+      const loadedMessages = cacheManager.loadMessages();
+      if (loadedMessages.length > 0) {
+        setMessages(loadedMessages);
         
         // Force scroll to bottom after loading messages
         setTimeout(() => {
@@ -148,29 +100,22 @@ const MainChat = ({ onNewChat, messages, setMessages, searchQuery }) => {
             });
           }
         }, 100);
-      } catch (error) {
-        // Clear corrupted localStorage
-        localStorage.removeItem('serguo-messages');
       }
     }
   }, []);
 
-  // Apply message limit and periodic cleanup
+  // Enhanced periodic cleanup using cache manager
   React.useEffect(() => {
-    const messageLimit = parseInt(localStorage.getItem('messageLimit') || '50'); // Reduced from 100 to 50
-    if (messages.length > messageLimit) {
-      const limitedMessages = messages.slice(-messageLimit);
-      setMessages(limitedMessages);
-      if (settings.autoSave) {
-        safeSaveToLocalStorage(limitedMessages);
+    if (settings.autoSave && messages.length > 0) {
+      // Check if we should perform periodic cleanup
+      if (cacheManager.shouldPerformCleanup(messages.length)) {
+        console.log('Performing periodic cache cleanup...');
+        safeSaveToLocalStorage(messages);
       }
-    }
-    
-    // Periodic cleanup - check localStorage size every 10 messages
-    if (messages.length % 10 === 0 && settings.autoSave) {
-      const savedMessages = localStorage.getItem('serguo-messages');
-      if (savedMessages && savedMessages.length > 1.5 * 1024 * 1024) { // 1.5MB threshold
-        console.log('Performing periodic localStorage cleanup...');
+      
+      // Check if storage is approaching limits
+      if (cacheManager.isStorageNearLimit()) {
+        console.log('Storage approaching limit, performing cleanup...');
         safeSaveToLocalStorage(messages);
       }
     }
@@ -319,13 +264,13 @@ const MainChat = ({ onNewChat, messages, setMessages, searchQuery }) => {
       // Check if it's a valid file type (images or PDFs)
       const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/bmp', 'image/svg+xml', 'application/pdf'];
       if (!validTypes.includes(file.type)) {
-        alert('Please select a valid file (JPEG, PNG, GIF, WebP, BMP, SVG, or PDF)');
+        showError('Please select a valid file (JPEG, PNG, GIF, WebP, BMP, SVG, or PDF)');
         return;
       }
 
       // Check file size (max 10MB)
       if (file.size > 10 * 1024 * 1024) {
-        alert('File size should be less than 10MB');
+        showError('File size should be less than 10MB');
         return;
       }
 
@@ -351,7 +296,7 @@ const MainChat = ({ onNewChat, messages, setMessages, searchQuery }) => {
         if (file) {
           // Check file size (max 10MB)
           if (file.size > 10 * 1024 * 1024) {
-            alert('File size should be less than 10MB');
+            showError('File size should be less than 10MB');
             return;
           }
 

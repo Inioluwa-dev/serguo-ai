@@ -27,3 +27,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Developer notes and documentation
+dev.txt
+DEV_NOTES.md
+DEVELOPER_NOTES.txt
