@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { FiSend, FiLink } from 'react-icons/fi';
 import FilePreview from './FilePreview';
 
@@ -17,45 +17,8 @@ const ChatInput = ({
   isRequestActive,
   stopCurrentRequest
 }) => {
-  // Handle mobile keyboard visibility
-  useEffect(() => {
-    const handleFocus = () => {
-      // Scroll to input when focused on mobile
-      setTimeout(() => {
-        const input = document.querySelector('input[type="text"]');
-        if (input && window.innerWidth <= 768) {
-          input.scrollIntoView({ 
-            behavior: 'smooth', 
-            block: 'center',
-            inline: 'nearest'
-          });
-        }
-      }, 300);
-    };
-
-    const handleBlur = () => {
-      // Reset scroll when input loses focus
-      if (window.innerWidth <= 768) {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      }
-    };
-
-    const input = document.querySelector('input[type="text"]');
-    if (input) {
-      input.addEventListener('focus', handleFocus);
-      input.addEventListener('blur', handleBlur);
-    }
-
-    return () => {
-      if (input) {
-        input.removeEventListener('focus', handleFocus);
-        input.removeEventListener('blur', handleBlur);
-      }
-    };
-  }, []);
-
   return (
-    <div className="p-4 border-t border-gray-800 dark:border-gray-700 bg-primary safe-area-pb">
+    <div className="p-4 border-t border-gray-800 dark:border-gray-700 bg-primary">
       <form onSubmit={handleSubmit} className="max-w-2xl mx-auto">
         {/* File Preview */}
         <FilePreview 

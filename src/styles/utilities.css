@@ -83,33 +83,3 @@
 .input-border {
   border-color: var(--border-secondary);
 }
-
-/* Mobile Keyboard Handling */
-.safe-area-pb {
-  padding-bottom: env(safe-area-inset-bottom);
-}
-
-/* Mobile viewport handling for keyboard */
-@supports (padding: max(0px)) {
-  .safe-area-pb {
-    padding-bottom: max(env(safe-area-inset-bottom), 16px);
-  }
-}
-
-/* Mobile input focus handling */
-@media (max-width: 768px) {
-  .mobile-input-focus {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    z-index: 50;
-    transform: translateY(0);
-    transition: transform 0.3s ease;
-  }
-  
-  /* Ensure input is visible when keyboard appears */
-  input:focus {
-    transform: translateY(-50px);
-  }
-}

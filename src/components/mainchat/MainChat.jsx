@@ -910,8 +910,8 @@ const MainChat = ({ onNewChat, messages, setMessages, searchQuery }) => {
         />
       </div>
       
-      {/* Input Area - Fixed at bottom with mobile keyboard support */}
-      <div className="fixed bottom-0 left-0 right-0 z-30 bg-primary border-t border-gray-800 dark:border-gray-700 mb-0 safe-area-pb">
+      {/* Input Area - Fixed at bottom */}
+      <div className="fixed bottom-0 left-0 right-0 z-30 bg-primary border-t border-gray-800 dark:border-gray-700 mb-0">
         <ChatInput 
           inputValue={inputValue}
           setInputValue={setInputValue}
